@@ -138,7 +138,7 @@ RUN --mount=type=cache,id=jam-pip-${TARGETPLATFORM},target=/root/.cache/pip \
     --mount=type=cache,id=jam-jmdeps-${TARGETPLATFORM},target=/src/deps/cache \
     pip3 config set global.break-system-packages true \
     && ./install.sh --docker-install --without-qt $JM_INSTALL_SCRIPT_ARGS \
-    && rm --recursive --force install.sh deps/cache/ test/ .git/ .gitignore .github/ .coveragerc joinmarket-qt.desktop
+    && rm --recursive --force install.sh test/ .git/ .gitignore .github/ .coveragerc joinmarket-qt.desktop
 
 # cleanup and remove ephemeral dependencies
 RUN apt-get remove --purge --auto-remove --yes gnupg python3-pip apt-transport-https \
