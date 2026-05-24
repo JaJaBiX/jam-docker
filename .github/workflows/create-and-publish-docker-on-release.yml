@@ -10,7 +10,7 @@ jobs:
     permissions:
       contents: read
     outputs:
-      version: ${{ env.GITHUB_REF_NAME }}
+      version: ${{ github.ref_name }}
       description: ${{ steps.dotenv.outputs.description }}
       ui_repo: ${{ steps.dotenv.outputs.jam_repo }}
       ui_repo_ref: ${{ steps.dotenv.outputs.jam_repo_ref }}
