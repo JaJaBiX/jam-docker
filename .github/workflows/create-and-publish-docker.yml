@@ -15,8 +15,16 @@ on:
         description: 'ui version/branch (e.g. v0.1.1, master, etc.)'
         required: true
         type: string
+      ui_repo:
+        description: 'ui git repo'
+        required: true
+        type: string
       server_repo_ref:
         description: 'server version/branch (e.g. v0.9.8, master, etc.)'
+        required: true
+        type: string
+      server_repo:
+        description: 'server git repo'
         required: true
         type: string
       image_name_prefix:
@@ -64,6 +72,11 @@ jobs:
         uses: docker/metadata-action@v6.0.0
         with:
           images: ${{ env.REGISTRY }}/${{ inputs.image_name_prefix }}${{ matrix.context }}
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=${{ inputs.version }}
+            type=raw,value=latest,enable=${{ !endsWith(inputs.version, '-dev') }}
           labels: |
             org.opencontainers.image.title=jam-${{ matrix.context }}
             org.opencontainers.image.version=${{ inputs.version }}
@@ -80,6 +93,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
+            JAM_REPO=${{ inputs.ui_repo }}
             JAM_REPO_REF=${{ inputs.ui_repo_ref }}
+            JM_SERVER_REPO=${{ inputs.server_repo }}
             JM_SERVER_REPO_REF=${{ inputs.server_repo_ref }}
             SKIP_RELEASE_VERIFICATION=${{ inputs.skip_release_verification }}

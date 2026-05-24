@@ -16,10 +16,20 @@ on:
         required: true
         default: 'master'
         type: string
+      ui_repo:
+        description: 'ui git repo'
+        required: true
+        default: 'https://github.com/joinmarket-webui/jam'
+        type: string
       server_repo_ref:
         description: 'server version/branch (e.g. v0.9.6, master, etc.)'
         required: true
         default: 'master'
+        type: string
+      server_repo:
+        description: 'server git repo'
+        required: true
+        default: 'https://github.com/JaJaBiX/joinmarket-clientserver'
         type: string
       skip_release_verification:
         description: 'enable skipping release verification'
@@ -33,7 +43,9 @@ jobs:
     with:
       version: ${{ github.event.inputs.version }}-dev
       description: ${{ github.event.inputs.description }}
+      ui_repo: ${{ github.event.inputs.ui_repo }}
       ui_repo_ref: ${{ github.event.inputs.ui_repo_ref }}
+      server_repo: ${{ github.event.inputs.server_repo }}
       server_repo_ref: ${{ github.event.inputs.server_repo_ref }}
-      image_name_prefix: joinmarket-webui/jam-dev-
+      image_name_prefix: jajabix/jam-dev-
       skip_release_verification: ${{ github.event.inputs.skip_release_verification == 'true' }}

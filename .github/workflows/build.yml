@@ -52,7 +52,9 @@ jobs:
           tags: joinmarket-webui/jam-${{ matrix.context }}-ci
           labels: ci
           build-args: |
+            JAM_REPO=https://github.com/joinmarket-webui/jam
             JAM_REPO_REF=master
+            JM_SERVER_REPO=https://github.com/JaJaBiX/joinmarket-clientserver
             JM_SERVER_REPO_REF=master
             SKIP_RELEASE_VERIFICATION=true
             JM_INSTALL_SCRIPT_ARGS=--disable-secp-check --no-gpg-validation

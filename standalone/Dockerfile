@@ -116,6 +116,7 @@ RUN addgroup --system tor \
     logrotate coreutils \
     # tor
     tor \
+    obfs4proxy \
     deb.torproject.org-keyring \
     # ui dependencies
     nginx \

@@ -6,6 +6,18 @@ Contains two separate images:
 - ui-only: Only the UI
 - standalone: UI + joinmarket clientserver
 
+## Fork policy
+
+This fork publishes images under `ghcr.io/jajabix/jam-*` and builds the
+standalone image from `https://github.com/JaJaBiX/joinmarket-clientserver`.
+
+Run `scripts/check-upstream-jm-server-repo.sh` before syncing upstream. It emits
+a warning if upstream `joinmarket-webui/jam-docker` changes `JM_SERVER_REPO`,
+which indicates that JoinMarket clientserver may have a new active upstream and
+this fork should be reviewed before publishing new images.
+
+The `sync: upstream jam-docker` workflow fetches upstream, reapplies this fork
+policy, and opens a pull request.
 
 ## ui-only
 ### Usage Notes

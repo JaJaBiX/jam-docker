@@ -1,0 +1,49 @@
+name: 'sync: upstream jam-docker'
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * 1'
+
+jobs:
+  sync-upstream:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "Ivan Podinskij"
+          git config user.email "i_podinskij@yethoro.xyz"
+
+      - name: Check upstream server repository
+        run: scripts/check-upstream-jm-server-repo.sh
+
+      - name: Merge upstream
+        run: |
+          git checkout -B sync/upstream-master
+          git merge --no-commit --no-ff upstream/master
+          scripts/apply-fork-policy.sh
+
+      - name: Create sync pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: sync/upstream-master
+          delete-branch: true
+          author: Ivan Podinskij <i_podinskij@yethoro.xyz>
+          committer: Ivan Podinskij <i_podinskij@yethoro.xyz>
+          commit-message: Sync upstream jam-docker
+          title: Sync upstream jam-docker
+          body: |
+            Syncs this fork with `joinmarket-webui/jam-docker`.
+
+            The workflow also checks upstream `.env` for `JM_SERVER_REPO`.
+            If that value no longer points to the archived
+            `JoinMarket-Org/joinmarket-clientserver`, review and sync this
+            fork's `joinmarket-clientserver` source before publishing images.

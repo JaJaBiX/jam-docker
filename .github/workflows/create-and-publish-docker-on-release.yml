@@ -12,8 +12,11 @@ jobs:
     outputs:
       version: ${{ env.GITHUB_REF_NAME }}
       description: ${{ steps.dotenv.outputs.description }}
+      ui_repo: ${{ steps.dotenv.outputs.jam_repo }}
       ui_repo_ref: ${{ steps.dotenv.outputs.jam_repo_ref }}
+      server_repo: ${{ steps.dotenv.outputs.jm_server_repo }}
       server_repo_ref: ${{ steps.dotenv.outputs.jm_server_repo_ref }}
+      skip_release_verification: ${{ steps.dotenv.outputs.skip_release_verification }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
@@ -30,6 +33,9 @@ jobs:
     with:
       version: ${{ needs.readenv.outputs.version }}
       description: ${{ needs.readenv.outputs.description }}
+      ui_repo: ${{ needs.readenv.outputs.ui_repo }}
       ui_repo_ref: ${{ needs.readenv.outputs.ui_repo_ref }}
+      server_repo: ${{ needs.readenv.outputs.server_repo }}
       server_repo_ref: ${{ needs.readenv.outputs.server_repo_ref }}
-      image_name_prefix: joinmarket-webui/jam-
+      image_name_prefix: jajabix/jam-
+      skip_release_verification: ${{ needs.readenv.outputs.skip_release_verification == 'true' }}
