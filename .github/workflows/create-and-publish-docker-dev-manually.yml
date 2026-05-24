@@ -36,6 +36,11 @@ on:
         required: false
         default: false
         type: boolean
+      jm_install_script_args:
+        description: 'extra arguments passed to joinmarket install.sh in standalone image'
+        required: false
+        default: '--disable-secp-check'
+        type: string
 
 jobs:
   image-manually:
@@ -49,3 +54,4 @@ jobs:
       server_repo_ref: ${{ github.event.inputs.server_repo_ref }}
       image_name_prefix: jajabix/jam-dev-
       skip_release_verification: ${{ github.event.inputs.skip_release_verification == 'true' }}
+      jm_install_script_args: ${{ github.event.inputs.jm_install_script_args }}

@@ -17,6 +17,7 @@ jobs:
       server_repo: ${{ steps.dotenv.outputs.jm_server_repo }}
       server_repo_ref: ${{ steps.dotenv.outputs.jm_server_repo_ref }}
       skip_release_verification: ${{ steps.dotenv.outputs.skip_release_verification }}
+      jm_install_script_args: ${{ steps.dotenv.outputs.jm_install_script_args }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
@@ -39,3 +40,4 @@ jobs:
       server_repo_ref: ${{ needs.readenv.outputs.server_repo_ref }}
       image_name_prefix: jajabix/jam-
       skip_release_verification: ${{ needs.readenv.outputs.skip_release_verification == 'true' }}
+      jm_install_script_args: ${{ needs.readenv.outputs.jm_install_script_args || '--disable-secp-check' }}

@@ -1,4 +1,4 @@
-
+# syntax=docker/dockerfile:1.7
 # global arguments
 ARG MAINTAINER='Jam https://github.com/joinmarket-webui'
 
@@ -9,7 +9,7 @@ ARG JM_SERVER_REPO=https://github.com/JoinMarket-Org/joinmarket-clientserver
 ARG JM_SERVER_REPO_REF=master
 
 ARG SKIP_RELEASE_VERIFICATION=false
-ARG JM_INSTALL_SCRIPT_ARGS=''
+ARG JM_INSTALL_SCRIPT_ARGS='--disable-secp-check'
 
 ARG NODE_IMAGE_VERSION=22.14.0
 ARG NODE_IMAGE_HASH=9bef0ef1e268f60627da9ba7d7605e8831d5b56ad07487d24d1aa386336d1944
@@ -78,13 +78,7 @@ RUN git clone "$JM_SERVER_REPO" . --depth=1 --branch "$JM_SERVER_REPO_REF" \
 # --- RUNTIME builder
 FROM ${DEBIAN_IMAGE}
 ARG MAINTAINER
-ARG JM_SERVER_REPO_REF
-ARG JAM_REPO_REF
 ARG JM_INSTALL_SCRIPT_ARGS
-
-LABEL maintainer="$MAINTAINER"
-LABEL ui-version="$JAM_REPO_REF"
-LABEL server-version="$JM_SERVER_REPO_REF"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -139,7 +133,10 @@ RUN set -eux \
        fi
 
 # compile and install JoinMarket
-RUN pip3 config set global.break-system-packages true \
+ARG TARGETPLATFORM
+RUN --mount=type=cache,id=jam-pip-${TARGETPLATFORM},target=/root/.cache/pip \
+    --mount=type=cache,id=jam-jmdeps-${TARGETPLATFORM},target=/src/deps/cache \
+    pip3 config set global.break-system-packages true \
     && ./install.sh --docker-install --without-qt $JM_INSTALL_SCRIPT_ARGS \
     && rm --recursive --force install.sh deps/cache/ test/ .git/ .gitignore .github/ .coveragerc joinmarket-qt.desktop
 
@@ -162,6 +159,13 @@ COPY logrotate/* /etc/logrotate.d/
 
 # ensure log directory exists (dinit files depend on it)
 RUN mkdir --parents /var/log/jam
+
+# keep version labels late so changing refs does not bust heavy build layers
+ARG JAM_REPO_REF
+ARG JM_SERVER_REPO_REF
+LABEL maintainer="$MAINTAINER"
+LABEL ui-version="$JAM_REPO_REF"
+LABEL server-version="$JM_SERVER_REPO_REF"
 
 # nginx default port
 EXPOSE 80

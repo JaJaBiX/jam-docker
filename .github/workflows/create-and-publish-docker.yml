@@ -36,6 +36,11 @@ on:
         required: false
         default: false
         type: boolean
+      jm_install_script_args:
+        description: 'extra arguments passed to joinmarket install.sh in standalone image'
+        required: false
+        default: '--disable-secp-check'
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -106,3 +111,4 @@ jobs:
             JM_SERVER_REPO=${{ inputs.server_repo }}
             JM_SERVER_REPO_REF=${{ inputs.server_repo_ref }}
             SKIP_RELEASE_VERIFICATION=${{ inputs.skip_release_verification }}
+            JM_INSTALL_SCRIPT_ARGS=${{ inputs.jm_install_script_args }}
