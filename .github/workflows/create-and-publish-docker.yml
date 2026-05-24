@@ -44,6 +44,7 @@ jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: read
       packages: write
     strategy:
@@ -92,6 +93,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=jam-${{ matrix.context }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ inputs.image_name_prefix }}${{ matrix.context }}:latest
+            type=registry,ref=${{ env.REGISTRY }}/${{ inputs.image_name_prefix }}${{ matrix.context }}:buildcache
+          cache-to: |
+            type=gha,scope=jam-${{ matrix.context }},mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ inputs.image_name_prefix }}${{ matrix.context }}:buildcache,mode=max
           build-args: |
             JAM_REPO=${{ inputs.ui_repo }}
             JAM_REPO_REF=${{ inputs.ui_repo_ref }}

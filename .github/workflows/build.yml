@@ -11,6 +11,7 @@ jobs:
   build-image:
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: read
       packages: write
     strategy:
@@ -44,10 +45,9 @@ jobs:
         with:
           context: ./${{ matrix.context }}
           outputs: type=cacheonly
-          cache-from: type=gha
-          cache-to: type=gha
-          #platforms: linux/amd64,linux/arm64
-          platforms: linux/arm64
+          cache-from: type=gha,scope=jam-${{ matrix.context }}
+          cache-to: type=gha,scope=jam-${{ matrix.context }},mode=max
+          platforms: linux/amd64,linux/arm64
           push: false
           tags: joinmarket-webui/jam-${{ matrix.context }}-ci
           labels: ci
@@ -57,4 +57,3 @@ jobs:
             JM_SERVER_REPO=https://github.com/JaJaBiX/joinmarket-clientserver
             JM_SERVER_REPO_REF=master
             SKIP_RELEASE_VERIFICATION=true
-            JM_INSTALL_SCRIPT_ARGS=--disable-secp-check --no-gpg-validation
