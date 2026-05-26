@@ -36,6 +36,7 @@ FROM builder-base AS ui-builder
 ARG SKIP_RELEASE_VERIFICATION
 ARG JAM_REPO
 ARG JAM_REPO_REF
+ARG JAM_REPO_RESOLVED_REF=unknown
 
 COPY --from=node /usr/lib /usr/lib
 COPY --from=node /usr/local/lib /usr/local/lib
@@ -47,7 +48,8 @@ WORKDIR /usr/src/jam
 COPY pubkeys/ /pubkeys
 
 # checkout and build project
-RUN git clone "$JAM_REPO" . --depth=1 --branch "$JAM_REPO_REF" \
+RUN echo "JAM_REPO_RESOLVED_REF=$JAM_REPO_RESOLVED_REF" \
+    && git clone "$JAM_REPO" . --depth=1 --branch "$JAM_REPO_REF" \
     && (if [ "$SKIP_RELEASE_VERIFICATION" != "true" ]; then \
         find /pubkeys -iname '*.asc' -exec gpg --import "{}" \; \
         && git verify-tag "$JAM_REPO_REF"; \
@@ -63,12 +65,14 @@ FROM builder-base AS server-builder
 ARG SKIP_RELEASE_VERIFICATION
 ARG JM_SERVER_REPO
 ARG JM_SERVER_REPO_REF
+ARG JM_SERVER_REPO_RESOLVED_REF=unknown
 
 WORKDIR /usr/src/joinmarket-clientserver
 
 COPY pubkeys/ /pubkeys
 
-RUN git clone "$JM_SERVER_REPO" . --depth=1 --branch "$JM_SERVER_REPO_REF" \
+RUN echo "JM_SERVER_REPO_RESOLVED_REF=$JM_SERVER_REPO_RESOLVED_REF" \
+    && git clone "$JM_SERVER_REPO" . --depth=1 --branch "$JM_SERVER_REPO_REF" \
     && (if [ "$SKIP_RELEASE_VERIFICATION" != "true" ]; then \
         find /pubkeys -iname '*.asc' -exec gpg --import "{}" \; \
         && git verify-tag "$JM_SERVER_REPO_REF"; \

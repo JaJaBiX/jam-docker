@@ -34,13 +34,15 @@ FROM builder-base AS builder
 ARG SKIP_RELEASE_VERIFICATION
 ARG JAM_REPO
 ARG JAM_REPO_REF
+ARG JAM_REPO_RESOLVED_REF=unknown
 
 WORKDIR /usr/src/app
 
 COPY pubkeys/ /pubkeys
 
 # checkout and build project
-RUN git clone "$JAM_REPO" . --depth=1 --branch "$JAM_REPO_REF" \
+RUN echo "JAM_REPO_RESOLVED_REF=$JAM_REPO_RESOLVED_REF" \
+    && git clone "$JAM_REPO" . --depth=1 --branch "$JAM_REPO_REF" \
     && (if [ "$SKIP_RELEASE_VERIFICATION" != "true" ]; then \
         find /pubkeys -iname '*.asc' -exec gpg --import "{}" \; \
         && git verify-tag "$JAM_REPO_REF"; \
