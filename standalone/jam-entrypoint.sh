@@ -70,6 +70,34 @@ if [ "${jmenv['network']}" = "regtest" ]; then
     jmenv['network']='testnet'
 fi
 
+ensure_config_key() {
+    local section="$1"
+    local key="$2"
+
+    if grep -Eq "^#?${key}[[:space:]]*=" "$CONFIG"; then
+        return
+    fi
+
+    if ! grep -qx "\\[${section}\\]" "$CONFIG"; then
+        printf "\n[%s]\n%s =\n" "$section" "$key" >> "$CONFIG"
+        return
+    fi
+
+    awk -v section="[${section}]" -v key="${key}" '
+        $0 == section {
+            print
+            print key " ="
+            next
+        }
+        { print }
+    ' "$CONFIG" > "${CONFIG}.tmp"
+    mv "${CONFIG}.tmp" "$CONFIG"
+}
+
+ensure_config_key TIMEOUT taker_stall_monitor_timeout_seconds
+ensure_config_key TIMEOUT taker_stage2_sig_timeout_seconds
+ensure_config_key POLICY taker_stage2_maker_cooldown_seconds
+
 # for every env variable JM_FOO=BAR, replace the default configuration value of 'foo' by 'BAR'
 for key in "${!jmenv[@]}"; do
     val="${jmenv[${key}]}"
