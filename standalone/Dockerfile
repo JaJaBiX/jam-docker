@@ -29,6 +29,7 @@ FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS node
 # --- Builder base 
 FROM --platform=$BUILDPLATFORM ${ALPINE_IMAGE} AS builder-base
 RUN apk add --no-cache --update git gnupg
+COPY --chmod=0755 checkout-source.sh /usr/local/bin/checkout-source
 # --- Builder base - end
 
 # --- UI builder 
@@ -49,11 +50,7 @@ COPY pubkeys/ /pubkeys
 
 # checkout and build project
 RUN echo "JAM_REPO_RESOLVED_REF=$JAM_REPO_RESOLVED_REF" \
-    && git clone "$JAM_REPO" . --depth=1 --branch "$JAM_REPO_REF" \
-    && (if [ "$SKIP_RELEASE_VERIFICATION" != "true" ]; then \
-        find /pubkeys -iname '*.asc' -exec gpg --import "{}" \; \
-        && git verify-tag "$JAM_REPO_REF"; \
-    fi) \
+    && checkout-source "$JAM_REPO" "$JAM_REPO_REF" "$JAM_REPO_RESOLVED_REF" "$SKIP_RELEASE_VERIFICATION" /pubkeys \
     && npm clean-install --no-fund --no-audit \
     && npm run build
 # --- UI builder - end
@@ -72,11 +69,7 @@ WORKDIR /usr/src/joinmarket-clientserver
 COPY pubkeys/ /pubkeys
 
 RUN echo "JM_SERVER_REPO_RESOLVED_REF=$JM_SERVER_REPO_RESOLVED_REF" \
-    && git clone "$JM_SERVER_REPO" . --depth=1 --branch "$JM_SERVER_REPO_REF" \
-    && (if [ "$SKIP_RELEASE_VERIFICATION" != "true" ]; then \
-        find /pubkeys -iname '*.asc' -exec gpg --import "{}" \; \
-        && git verify-tag "$JM_SERVER_REPO_REF"; \
-    fi)
+    && checkout-source "$JM_SERVER_REPO" "$JM_SERVER_REPO_REF" "$JM_SERVER_REPO_RESOLVED_REF" "$SKIP_RELEASE_VERIFICATION" /pubkeys
 # --- SERVER builder - end
 
 # --- Native dependency builder

@@ -12,6 +12,7 @@ env:
   JAM_REPO_REF: master
   JM_SERVER_REPO: https://github.com/JaJaBiX/joinmarket-clientserver
   JM_SERVER_REPO_REF: master
+  JM_INSTALL_SCRIPT_ARGS: --disable-secp-check
 
 jobs:
   build-image:
@@ -48,9 +49,20 @@ jobs:
             if [[ "$ref" =~ ^[0-9a-fA-F]{40}$ ]]; then
               resolved="$ref"
             else
-              resolved="$(git ls-remote --exit-code "$repo" \
-                "refs/tags/$ref" "refs/heads/$ref" "$ref" |
+              resolved="$(git ls-remote "$repo" "refs/tags/$ref^{}" |
                 awk 'NR == 1 { print $1 }')"
+              if [[ -z "$resolved" ]]; then
+                resolved="$(git ls-remote "$repo" "refs/tags/$ref" |
+                  awk 'NR == 1 { print $1 }')"
+              fi
+              if [[ -z "$resolved" ]]; then
+                resolved="$(git ls-remote "$repo" "refs/heads/$ref" |
+                  awk 'NR == 1 { print $1 }')"
+              fi
+              if [[ -z "$resolved" ]]; then
+                resolved="$(git ls-remote "$repo" "$ref" |
+                  awk 'NR == 1 { print $1 }')"
+              fi
             fi
 
             if [[ -z "$resolved" ]]; then
@@ -65,15 +77,30 @@ jobs:
           jm_server_repo_resolved_ref="$(resolve_ref "$JM_SERVER_REPO" "$JM_SERVER_REPO_REF")"
           jam_repo_ref_short="${jam_repo_resolved_ref:0:12}"
           jm_server_repo_ref_short="${jm_server_repo_resolved_ref:0:12}"
+          native_deps_cache_key="$(
+            {
+              printf 'JM_INSTALL_SCRIPT_ARGS=%s\n' "$JM_INSTALL_SCRIPT_ARGS"
+              awk '
+                /^ARG DEBIAN_IMAGE/ { print }
+                index($0, "FROM ${DEBIAN_IMAGE} AS native-deps") { in_native = 1 }
+                in_native { print }
+                /^# --- Native dependency builder - end/ { in_native = 0 }
+              ' standalone/Dockerfile
+              sha256sum standalone/build-native-deps.sh
+              find standalone/pubkeys/third-party -type f -exec sha256sum {} + | sort -k2
+            } | sha256sum | cut --characters=1-12
+          )"
 
           {
             echo "jam_repo_resolved_ref=$jam_repo_resolved_ref"
             echo "jm_server_repo_resolved_ref=$jm_server_repo_resolved_ref"
             echo "cache_key=jam-${jam_repo_ref_short}-jm-${jm_server_repo_ref_short}"
+            echo "native_deps_cache_key=$native_deps_cache_key"
           } >> "$GITHUB_OUTPUT"
 
           echo "Resolved JAM_REPO_REF=$JAM_REPO_REF to $jam_repo_resolved_ref"
           echo "Resolved JM_SERVER_REPO_REF=$JM_SERVER_REPO_REF to $jm_server_repo_resolved_ref"
+          echo "Resolved native deps cache key to $native_deps_cache_key"
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -85,6 +112,23 @@ jobs:
             org.opencontainers.image.version=0.0.0
             org.opencontainers.image.description=Jam CI Build (${{ matrix.context }})
 
+      - name: Build standalone native dependency cache
+        if: matrix.context == 'standalone'
+        uses: docker/build-push-action@v7.1.0
+        env:
+          SOURCE_DATE_EPOCH: 0
+        with:
+          context: ./standalone
+          target: native-deps
+          outputs: type=cacheonly
+          cache-from: |
+            type=gha,scope=jam-ci-standalone-native-deps-${{ steps.source-refs.outputs.native_deps_cache_key }}
+            type=gha,scope=jam-standalone-native-deps-${{ steps.source-refs.outputs.native_deps_cache_key }}
+          cache-to: type=gha,scope=jam-ci-standalone-native-deps-${{ steps.source-refs.outputs.native_deps_cache_key }},mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            JM_INSTALL_SCRIPT_ARGS=${{ env.JM_INSTALL_SCRIPT_ARGS }}
+
       - name: Build and push Docker image for ${{ matrix.context }}
         uses: docker/build-push-action@v7.1.0
         env:
@@ -93,6 +137,8 @@ jobs:
           context: ./${{ matrix.context }}
           outputs: type=cacheonly
           cache-from: |
+            ${{ matrix.context == 'standalone' && format('type=gha,scope=jam-ci-standalone-native-deps-{0}', steps.source-refs.outputs.native_deps_cache_key) || '' }}
+            ${{ matrix.context == 'standalone' && format('type=gha,scope=jam-standalone-native-deps-{0}', steps.source-refs.outputs.native_deps_cache_key) || '' }}
             type=gha,scope=jam-ci-${{ matrix.context }}-${{ steps.source-refs.outputs.cache_key }}
             type=gha,scope=jam-${{ matrix.context }}-${{ steps.source-refs.outputs.cache_key }}
           cache-to: type=gha,scope=jam-ci-${{ matrix.context }}-${{ steps.source-refs.outputs.cache_key }},mode=max
@@ -108,4 +154,4 @@ jobs:
             JM_SERVER_REPO_REF=${{ env.JM_SERVER_REPO_REF }}
             JM_SERVER_REPO_RESOLVED_REF=${{ steps.source-refs.outputs.jm_server_repo_resolved_ref }}
             SKIP_RELEASE_VERIFICATION=true
-            JM_INSTALL_SCRIPT_ARGS=--disable-secp-check
+            JM_INSTALL_SCRIPT_ARGS=${{ env.JM_INSTALL_SCRIPT_ARGS }}
