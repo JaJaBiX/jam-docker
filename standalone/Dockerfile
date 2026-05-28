@@ -107,8 +107,6 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 COPY --from=dinit /out/usr/bin /usr/bin
 COPY --from=native-deps /opt/jam-native-root/ /
-COPY --from=ui-builder /usr/src/jam/build /app
-COPY --from=server-builder /usr/src/joinmarket-clientserver /src
 
 RUN addgroup --system tor \
     && adduser --system --disabled-login --home /home/tor --ingroup tor --gecos 'tor user' tor \
@@ -148,6 +146,7 @@ ENV CONFIG=${DATADIR}/joinmarket.cfg
 ENV DEFAULT_CONFIG=/root/default.cfg
 ENV PATH=/src/scripts:$PATH
 
+COPY --from=server-builder /usr/src/joinmarket-clientserver /src
 WORKDIR /src
 
 # install JoinMarket
@@ -161,6 +160,7 @@ RUN --mount=type=cache,id=jam-pip-${TARGETPLATFORM},target=/root/.cache/pip \
 RUN apt-get remove --purge --auto-remove --yes gnupg python3-pip apt-transport-https \
     && rm --force /var/log/dpkg.log
 
+COPY --from=ui-builder /usr/src/jam/build /app
 COPY default.cfg "${DEFAULT_CONFIG}"
 COPY dinit-conf/* /etc/dinit.d/
 COPY .bashrc /root/.bashrc
