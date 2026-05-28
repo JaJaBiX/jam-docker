@@ -79,14 +79,34 @@ RUN echo "JM_SERVER_REPO_RESOLVED_REF=$JM_SERVER_REPO_RESOLVED_REF" \
     fi)
 # --- SERVER builder - end
 
+# --- Native dependency builder
+FROM ${DEBIAN_IMAGE} AS native-deps
+ARG JM_INSTALL_SCRIPT_ARGS
+ARG TARGETPLATFORM
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+COPY --chmod=0755 build-native-deps.sh /usr/local/bin/build-native-deps
+COPY pubkeys/third-party/ /pubkeys/third-party/
+
+RUN apt-get update \
+    && apt-get install --quiet --no-install-recommends --no-install-suggests --yes \
+    ca-certificates curl gnupg build-essential automake autoconf pkg-config libtool \
+    && rm --recursive --force /var/lib/apt/lists/*
+
+RUN --mount=type=cache,id=jam-native-src-${TARGETPLATFORM},target=/var/cache/jam-native-src \
+    build-native-deps $JM_INSTALL_SCRIPT_ARGS \
+    && rm --recursive --force /tmp/jam-native-build /root/.gnupg
+# --- Native dependency builder - end
+
 # --- RUNTIME builder
 FROM ${DEBIAN_IMAGE}
 ARG MAINTAINER
-ARG JM_INSTALL_SCRIPT_ARGS
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 COPY --from=dinit /out/usr/bin /usr/bin
+COPY --from=native-deps /opt/jam-native-root/ /
 COPY --from=ui-builder /usr/src/jam/build /app
 COPY --from=server-builder /usr/src/joinmarket-clientserver /src
 
@@ -119,6 +139,7 @@ RUN addgroup --system tor \
     # ui dependencies
     nginx \
     # cleanup 
+    && ldconfig \
     && apt-get clean \
     && rm --recursive --force /var/lib/apt/lists/*
 
@@ -129,19 +150,11 @@ ENV PATH=/src/scripts:$PATH
 
 WORKDIR /src
 
-# workaround: adjust libsodium download URL in install.sh for legacy 1.0.18 releases
-# TODO: remove this once v0.9.11 is no longer supported and new releases are available
-RUN set -eux \
-    && if grep --quiet "sodium_version='libsodium-1.0.18'" install.sh; then \
-         sed --in-place "s#sodium_url='https://download.libsodium.org/libsodium/releases'#sodium_url='https://download.libsodium.org/libsodium/releases/old'#g" install.sh; \
-       fi
-
-# compile and install JoinMarket
+# install JoinMarket
 ARG TARGETPLATFORM
 RUN --mount=type=cache,id=jam-pip-${TARGETPLATFORM},target=/root/.cache/pip \
-    --mount=type=cache,id=jam-jmdeps-${TARGETPLATFORM},target=/src/deps/cache \
     pip3 config set global.break-system-packages true \
-    && ./install.sh --docker-install --without-qt $JM_INSTALL_SCRIPT_ARGS \
+    && pip3 install --editable ".[services]" \
     && rm --recursive --force install.sh test/ .git/ .gitignore .github/ .coveragerc joinmarket-qt.desktop
 
 # cleanup and remove ephemeral dependencies

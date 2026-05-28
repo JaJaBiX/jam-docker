@@ -107,10 +107,13 @@ jobs:
 
           jam_repo_resolved_ref="$(resolve_ref "$JAM_REPO" "$JAM_REPO_REF")"
           jm_server_repo_resolved_ref="$(resolve_ref "$JM_SERVER_REPO" "$JM_SERVER_REPO_REF")"
+          jam_repo_ref_short="${jam_repo_resolved_ref:0:12}"
+          jm_server_repo_ref_short="${jm_server_repo_resolved_ref:0:12}"
 
           {
             echo "jam_repo_resolved_ref=$jam_repo_resolved_ref"
             echo "jm_server_repo_resolved_ref=$jm_server_repo_resolved_ref"
+            echo "cache_key=jam-${jam_repo_ref_short}-jm-${jm_server_repo_ref_short}"
           } >> "$GITHUB_OUTPUT"
 
           echo "Resolved JAM_REPO_REF=$JAM_REPO_REF to $jam_repo_resolved_ref"
@@ -142,11 +145,14 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: |
-            type=gha,scope=jam-${{ matrix.context }}
-            type=registry,ref=${{ env.REGISTRY }}/${{ inputs.image_name_prefix }}${{ matrix.context }}:latest
+            type=gha,scope=jam-${{ matrix.context }}-${{ steps.source-refs.outputs.cache_key }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ inputs.image_name_prefix }}${{ matrix.context }}:buildcache-${{ steps.source-refs.outputs.cache_key }}
             type=registry,ref=${{ env.REGISTRY }}/${{ inputs.image_name_prefix }}${{ matrix.context }}:buildcache
+            ${{ !endsWith(inputs.version, '-dev') && format('type=registry,ref={0}/{1}{2}:latest', env.REGISTRY, inputs.image_name_prefix, matrix.context) || '' }}
+            ${{ startsWith(inputs.image_name_prefix, 'jajabix/jam-dev-') && format('type=registry,ref={0}/jajabix/jam-{1}:buildcache', env.REGISTRY, matrix.context) || '' }}
           cache-to: |
-            type=gha,scope=jam-${{ matrix.context }},mode=max
+            type=gha,scope=jam-${{ matrix.context }}-${{ steps.source-refs.outputs.cache_key }},mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ inputs.image_name_prefix }}${{ matrix.context }}:buildcache-${{ steps.source-refs.outputs.cache_key }},mode=max
             type=registry,ref=${{ env.REGISTRY }}/${{ inputs.image_name_prefix }}${{ matrix.context }}:buildcache,mode=max
           build-args: |
             JAM_REPO=${{ inputs.ui_repo }}
