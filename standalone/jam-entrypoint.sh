@@ -97,6 +97,15 @@ ensure_config_key() {
 ensure_config_key TIMEOUT taker_stall_monitor_timeout_seconds
 ensure_config_key TIMEOUT taker_stage2_sig_timeout_seconds
 ensure_config_key POLICY taker_stage2_maker_cooldown_seconds
+ensure_config_key POLICY taker_persistent_maker_ban_list
+ensure_config_key POLICY taker_persistent_maker_ban_file
+ensure_config_key POLICY taker_maker_penalty_db
+ensure_config_key POLICY taker_maker_cooldown_ban_threshold
+ensure_config_key POLICY taker_maker_cooldown_ban_window_seconds
+ensure_config_key POLICY taker_maker_auto_ban_seconds
+ensure_config_key POLICY taker_relax_stage2_cooldown_on_low_liquidity
+ensure_config_key POLICY taker_relax_soft_ignored_makers_on_low_liquidity
+ensure_config_key POLICY taker_max_maker_replacement_attempts
 
 # for every env variable JM_FOO=BAR, replace the default configuration value of 'foo' by 'BAR'
 for key in "${!jmenv[@]}"; do
